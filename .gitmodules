@@ -1,0 +1,3 @@
+[submodule "gitAPI"]
+	path = gitAPI
+	url = https://github.com/rabehrb203/gitAPI.git
