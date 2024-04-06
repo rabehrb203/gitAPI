@@ -7,7 +7,7 @@ const path = require("path");
 const app = express();
 const port = 8080 || process.env.PORT;
 
-const jsonDir = path.join(__dirname, "json_data");
+const jsonDir = path.join(__dirname, "json_data", "prison-experiment");
 
 // API endpoint for getting a list of manga titles and links
 app.get("/manga/titles", async (req, res) => {
