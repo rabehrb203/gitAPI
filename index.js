@@ -7,7 +7,7 @@ const path = require("path");
 const app = express();
 const port = 8080 || process.env.PORT;
 
-const jsonDir = path.join(__dirname, "json_data", "prison-experiment");
+const jsonDir = path.join(__dirname, "json_data");
 
 // API endpoint for getting a list of manga titles and links
 app.get("/manga/titles", async (req, res) => {
@@ -28,7 +28,7 @@ app.get("/manga/details/:manga_link", async (req, res) => {
   try {
     // Read manga details from corresponding JSON file
     const detailsData = fs.readFileSync(
-      path.join(jsonDir, `manga_details_${manga_link}.json`)
+      path.join(jsonDir, manga_link, `manga_details_${manga_link}.json`)
     );
     const details = JSON.parse(detailsData);
     res.json(details);
@@ -44,7 +44,7 @@ app.get("/manga/chapters/:manga_link", async (req, res) => {
   try {
     // Read manga chapters from corresponding JSON file
     const chaptersData = fs.readFileSync(
-      path.join(jsonDir, `manga_chapters_${manga_link}.json`)
+      path.join(jsonDir, manga_link, `manga_chapters_${manga_link}.json`)
     );
     const chapters = JSON.parse(chaptersData);
     res.json(chapters);
