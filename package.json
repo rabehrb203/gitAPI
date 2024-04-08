@@ -26,7 +26,9 @@
   "dependencies": {
     "axios": "^1.6.8",
     "cheerio": "^1.0.0-rc.12",
+    "compression": "^1.7.4",
     "express": "^4.19.2",
-    "puppeteer": "^22.6.3"
+    "turbocrawl": "^0.2.8",
+    "request": "^2.88.2"
   }
 }
