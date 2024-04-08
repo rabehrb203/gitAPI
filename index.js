@@ -160,7 +160,8 @@ app.get("/images/:link", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const port = 8080 || process.env.PORT;
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
