@@ -1,59 +1,44 @@
 const express = require("express");
-const axios = require("axios");
-const cheerio = require("cheerio");
-const fs = require("fs");
-const path = require("path");
+const puppeteer = require("puppeteer");
 
 const app = express();
 const port = 8080 || process.env.PORT;
 
-const jsonDir = path.join(__dirname, "json_data");
+// Function to get manga titles
+async function getMangaTitles() {
+  try {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto("https://lekmanga.net/manga/");
 
-// API endpoint for getting a list of manga titles and links
+    // Extract titles
+    const titles = await page.evaluate(() => {
+      const titleElements = document.querySelectorAll("h3.h5");
+      const titles = [];
+      titleElements.forEach((titleElement) => {
+        titles.push(titleElement.textContent.trim());
+      });
+      return titles;
+    });
+
+    await browser.close();
+    return titles;
+  } catch (error) {
+    throw new Error(`An error occurred: ${error}`);
+  }
+}
+
+// API endpoint for getting a list of manga titles
 app.get("/manga/titles", async (req, res) => {
   try {
-    // Read titles.json file
-    const titlesData = fs.readFileSync(path.join(jsonDir, "titles.json"));
-    const titles = JSON.parse(titlesData);
-    res.json(titles);
+    const mangaTitles = await getMangaTitles();
+    res.json(mangaTitles);
   } catch (error) {
-    res.status(500).json({ error: `An error occurred: ${error}` });
-  }
-});
-
-// API endpoint for getting details of a specific manga
-app.get("/manga/details/:manga_link", async (req, res) => {
-  const manga_link = req.params.manga_link;
-
-  try {
-    // Read manga details from corresponding JSON file
-    const detailsData = fs.readFileSync(
-      path.join(jsonDir, manga_link, `manga_details_${manga_link}.json`)
-    );
-    const details = JSON.parse(detailsData);
-    res.json(details);
-  } catch (error) {
-    res.status(500).json({ error: `An error occurred: ${error}` });
-  }
-});
-
-// API endpoint for getting chapters of a specific manga
-app.get("/manga/chapters/:manga_link", async (req, res) => {
-  const manga_link = req.params.manga_link;
-
-  try {
-    // Read manga chapters from corresponding JSON file
-    const chaptersData = fs.readFileSync(
-      path.join(jsonDir, manga_link, `manga_chapters_${manga_link}.json`)
-    );
-    const chapters = JSON.parse(chaptersData);
-    res.json(chapters);
-  } catch (error) {
-    res.status(500).json({ error: `An error occurred: ${error}` });
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
