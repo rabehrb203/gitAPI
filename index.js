@@ -1,44 +1,42 @@
-const express = require("express");
-const puppeteer = require("puppeteer");
+const app = require("express")();
 
-const app = express();
-const port = 8080 || process.env.PORT;
+let chrome = {};
+let puppeteer;
 
-// Function to get manga titles
-async function getMangaTitles() {
-  try {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto("https://lekmanga.net/manga/");
+// if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+// chrome = require("chrome-aws-lambda");
+// puppeteer = require("puppeteer-core");
+// } else {
+puppeteer = require("puppeteer");
+// }
 
-    // Extract titles
-    const titles = await page.evaluate(() => {
-      const titleElements = document.querySelectorAll("h3.h5");
-      const titles = [];
-      titleElements.forEach((titleElement) => {
-        titles.push(titleElement.textContent.trim());
-      });
-      return titles;
-    });
+app.get("/api", async (req, res) => {
+  let options = {};
 
-    await browser.close();
-    return titles;
-  } catch (error) {
-    throw new Error(`An error occurred: ${error}`);
+  if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+    options = {
+      args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
+      defaultViewport: chrome.defaultViewport,
+      executablePath: await chrome.executablePath,
+      headless: true,
+      ignoreHTTPSErrors: true,
+    };
   }
-}
 
-// API endpoint for getting a list of manga titles
-app.get("/manga/titles", async (req, res) => {
   try {
-    const mangaTitles = await getMangaTitles();
-    res.json(mangaTitles);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    let browser = await puppeteer.launch(options);
+
+    let page = await browser.newPage();
+    await page.goto("https://mangarose.net/manga");
+    res.send(await page.title());
+  } catch (err) {
+    console.error(err);
+    return null;
   }
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server started");
 });
+
+module.exports = app;
