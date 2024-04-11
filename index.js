@@ -10,14 +10,14 @@ const app = express();
 
 app.get("/mangas", async (req, res) => {
   try {
-    const response = await axios.get("https://lekmanga.net/manga/page/2");
+    const response = await axios.get("https://https://thunderscans.com/manga/");
     const html = response.data;
     const $ = cheerio.load(html);
     const dataList = [];
 
-    $(".tab-content-wrap .page-item-detail.manga").each((index, element) => {
-      const title = $(element).find(".h5").text().trim().replace("\t\t\t", "");
-      const image = $(element).find(".img-responsive").attr("src");
+    $(".listupd .bs").each((index, element) => {
+      const title = $(element).find(".tt").text().trim().replace("\t\t\t", "");
+      const image = $(element).find(".ts-post-image").attr("src");
       const link = $(element)
         .find("a")
         .attr("href")
