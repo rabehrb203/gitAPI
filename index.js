@@ -10,7 +10,7 @@ const app = express();
 
 app.get("/mangas", async (req, res) => {
   try {
-    const response = await axios.get("https://https://thunderscans.com/manga/");
+    const response = await axios.get("https://thunderscans.com/manga/");
     const html = response.data;
     const $ = cheerio.load(html);
     const dataList = [];
