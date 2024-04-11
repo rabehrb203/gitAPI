@@ -2,9 +2,9 @@ const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 // const puppeteer = require("puppeteer");
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
-const { Cluster } = require("puppeteer-cluster");
+// const puppeteer = require("puppeteer-core");
+// const chromium = require("@sparticuz/chromium");
+// const { Cluster } = require("puppeteer-cluster");
 
 const app = express();
 
