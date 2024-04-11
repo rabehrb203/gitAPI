@@ -1,42 +1,35 @@
 const express = require("express");
-const { chromium } = require("playwright");
 const axios = require("axios");
 const cheerio = require("cheerio");
+// const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
+const { Cluster } = require("puppeteer-cluster");
 
 const app = express();
 
 app.get("/mangas", async (req, res) => {
   try {
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
-    await page.goto("https://thunderscans.com/manga/?page=2");
+    const response = await axios.get("https://lekmanga.net/manga/page/2");
+    const html = response.data;
+    const $ = cheerio.load(html);
+    const dataList = [];
 
-    const data = await page.evaluate(() => {
-      const dataList = [];
-      const items = document.querySelectorAll(".listupd .bs");
+    $(".tab-content-wrap .page-item-detail.manga").each((index, element) => {
+      const title = $(element).find(".h5").text().trim().replace("\t\t\t", "");
+      const image = $(element).find(".img-responsive").attr("src");
+      const link = $(element)
+        .find("a")
+        .attr("href")
+        .substring(27)
+        .replace("/", "");
+      const rating = $(element).find(".chapter.font-meta").text();
+      const status = $(element).find(".chapter.font-meta").text();
 
-      items.forEach((item) => {
-        const title = item.querySelector(".tt").innerText;
-        const image = item.querySelector(".ts-post-image").getAttribute("src");
-        const link = item
-          .querySelector("a")
-          .getAttribute("href")
-          .substring(31)
-          .replace("/", "");
-        // const linkParts = link.split("/");
-        const rating = item.querySelector(".numscore").innerText;
-        const status = item.querySelector(".status i").innerText;
-        // const linkText = linkParts[linkParts.length - 1];
-
-        dataList.push({ title, image, rating, status, link });
-      });
-
-      return dataList;
+      dataList.push({ title, image, rating, status, link });
     });
 
-    await browser.close();
-
-    res.json(data);
+    res.json(dataList);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -47,37 +40,23 @@ app.get("/details/:link", async (req, res) => {
   try {
     const link = req.params.link;
     const url = `https://thunderscans.com/manga/${link}/`;
-
-    // جلب محتوى صفحة التفاصيل
     const response = await axios.get(url);
     const html = response.data;
-
-    // استخراج المعلومات باستخدام Cheerio
     const $ = cheerio.load(html);
-
     const mangaDetails = {};
 
-    // استخراج العنوان
     mangaDetails.title = $(".entry-title").text().trim();
-
-    // استخراج العنوان البديل
     mangaDetails.alternativeTitles = $(".alternative .desktop-titles")
       .text()
       .trim();
-
-    // استخراج التقييم
     mangaDetails.rating = $(".numscore").text().trim();
-
-    // استخراج حالة العمل
     mangaDetails.status = $(".imptdt .status i").text().trim();
-
-    // استخراج الأنواع
     mangaDetails.genres = [];
+
     $(".genres-container .mgen a").each((index, element) => {
       mangaDetails.genres.push($(element).text().trim());
     });
 
-    // استخراج الملخص
     mangaDetails.summary = $(".summary .entry-content p").text().trim();
 
     res.json(mangaDetails);
@@ -91,24 +70,17 @@ app.get("/chapters/:link", async (req, res) => {
   try {
     const link = req.params.link;
     const url = `https://thunderscans.com/manga/${link}/`;
-
-    // جلب محتوى صفحة الفصول
     const response = await axios.get(url);
     const html = response.data;
-
-    // استخراج المعلومات باستخدام Cheerio
     const $ = cheerio.load(html);
-
     const chaptersList = [];
 
-    // العثور على عناصر الفصول واستخراج المعلومات
     $(".eplister ul li").each((index, element) => {
       const chapterNum = $(element)
         .find(".chapternum")
         .text()
         .trim()
         .replace("الفصل\t\t\t\t\t\t\t", "");
-
       const chapterLink = $(element)
         .find("a")
         .attr("href")
@@ -130,38 +102,27 @@ app.get("/chapters/:link", async (req, res) => {
   }
 });
 
-app.get("/images/:link", async (req, res) => {
+app.get("/images/:link/:page", async (req, res) => {
   try {
     const link = req.params.link;
+    const page = req.params.page;
+    const url = `https://lekmanga.net/manga/${link}/${page}`;
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
 
-    const url = `https://thunderscans.com/${link}/`;
-
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
-    await page.goto(url);
-
-    // انتظر حتى يتم تحميل الصور
-    await page.waitForSelector(".ts-main-image", { timeout: 800000 });
-    console.log("Title : " + page.title);
-
-    // استخراج روابط الصور
-    const imageLinks = await page.$$eval(
-      "#readerarea img.ts-main-image",
-      (images) => images.map((img) => img.src)
-    );
-
-    console.log("روابط الصور:", imageLinks);
-
-    await browser.close();
+    const imageLinks = $(".reading-content img.wp-manga-chapter-img")
+      .map((_, img) => $(img).attr("src"))
+      .get();
 
     res.json({ imageLinks });
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Error" });
   }
 });
-const port = 8080 || process.env.PORT;
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
