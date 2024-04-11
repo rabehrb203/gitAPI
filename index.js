@@ -2,9 +2,9 @@ const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 // const puppeteer = require("puppeteer");
-// const puppeteer = require("puppeteer-core");
-// const chromium = require("@sparticuz/chromium");
-// const { Cluster } = require("puppeteer-cluster");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
+const { Cluster } = require("puppeteer-cluster");
 
 const app = express();
 
@@ -23,10 +23,10 @@ app.get("/mangas", async (req, res) => {
         .attr("href")
         .substring(27)
         .replace("/", "");
-      const rating = $(element).find(".chapter.font-meta").text();
-      const status = $(element).find(".chapter.font-meta").text();
-
-      dataList.push({ title, image, rating, status, link });
+      // const rating = $(element).find(".chapter.font-meta").text();
+      // const status = $(element).find(".chapter.font-meta").text();
+      //  rating, status,
+      dataList.push({ title, image, link });
     });
 
     res.json(dataList);
