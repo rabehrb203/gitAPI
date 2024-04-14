@@ -1,167 +1,59 @@
 const express = require("express");
-const { chromium } = require("playwright");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
-
-app.get("/mangas", async (req, res) => {
-  try {
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
-    await page.goto("https://thunderscans.com/manga/?page=2");
-
-    const data = await page.evaluate(() => {
-      const dataList = [];
-      const items = document.querySelectorAll(".listupd .bs");
-
-      items.forEach((item) => {
-        const title = item.querySelector(".tt").innerText;
-        const image = item.querySelector(".ts-post-image").getAttribute("src");
-        const link = item
-          .querySelector("a")
-          .getAttribute("href")
-          .substring(31)
-          .replace("/", "");
-        // const linkParts = link.split("/");
-        const rating = item.querySelector(".numscore").innerText;
-        const status = item.querySelector(".status i").innerText;
-        // const linkText = linkParts[linkParts.length - 1];
-
-        dataList.push({ title, image, rating, status, link });
-      });
-
-      return dataList;
-    });
-
-    await browser.close();
-
-    res.json(data);
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-app.get("/details/:link", async (req, res) => {
-  try {
-    const link = req.params.link;
-    const url = `https://thunderscans.com/manga/${link}/`;
-
-    // جلب محتوى صفحة التفاصيل
-    const response = await axios.get(url);
-    const html = response.data;
-
-    // استخراج المعلومات باستخدام Cheerio
-    const $ = cheerio.load(html);
-
-    const mangaDetails = {};
-
-    // استخراج العنوان
-    mangaDetails.title = $(".entry-title").text().trim();
-
-    // استخراج العنوان البديل
-    mangaDetails.alternativeTitles = $(".alternative .desktop-titles")
-      .text()
-      .trim();
-
-    // استخراج التقييم
-    mangaDetails.rating = $(".numscore").text().trim();
-
-    // استخراج حالة العمل
-    mangaDetails.status = $(".imptdt .status i").text().trim();
-
-    // استخراج الأنواع
-    mangaDetails.genres = [];
-    $(".genres-container .mgen a").each((index, element) => {
-      mangaDetails.genres.push($(element).text().trim());
-    });
-
-    // استخراج الملخص
-    mangaDetails.summary = $(".summary .entry-content p").text().trim();
-
-    res.json(mangaDetails);
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-app.get("/chapters/:link", async (req, res) => {
-  try {
-    const link = req.params.link;
-    const url = `https://thunderscans.com/manga/${link}/`;
-
-    // جلب محتوى صفحة الفصول
-    const response = await axios.get(url);
-    const html = response.data;
-
-    // استخراج المعلومات باستخدام Cheerio
-    const $ = cheerio.load(html);
-
-    const chaptersList = [];
-
-    // العثور على عناصر الفصول واستخراج المعلومات
-    $(".eplister ul li").each((index, element) => {
-      const chapterNum = $(element)
-        .find(".chapternum")
-        .text()
-        .trim()
-        .replace("الفصل\t\t\t\t\t\t\t", "");
-
-      const chapterLink = $(element)
-        .find("a")
-        .attr("href")
-        .substring(25)
-        .replace("/", "");
-      const chapterDate = $(element).find(".chapterdate").text().trim();
-
-      chaptersList.push({
-        chapterNum,
-        chapterDate,
-        chapterLink,
-      });
-    });
-
-    res.json(chaptersList);
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-app.get("/images/:link", async (req, res) => {
-  try {
-    const link = req.params.link;
-
-    const url = `https://thunderscans.com/${link}/`;
-
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
-    await page.goto(url);
-
-    // انتظر حتى يتم تحميل الصور
-    await page.waitForSelector(".ts-main-image", { timeout: 800000 });
-    console.log("Title : " + page.title);
-
-    // استخراج روابط الصور
-    const imageLinks = await page.$$eval(
-      "#readerarea img.ts-main-image",
-      (images) => images.map((img) => img.src)
-    );
-
-    console.log("روابط الصور:", imageLinks);
-
-    await browser.close();
-
-    res.json({ imageLinks });
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 const port = 8080 || process.env.PORT;
 
+const jsonDir = path.join(__dirname, "json_data");
+
+// API endpoint for getting a list of manga titles and links
+app.get("/manga/titles", async (req, res) => {
+  try {
+    // Read titles.json file
+    const titlesData = fs.readFileSync(path.join(jsonDir, "titles.json"));
+    const titles = JSON.parse(titlesData);
+    res.json(titles);
+  } catch (error) {
+    res.status(500).json({ error: `An error occurred: ${error}` });
+  }
+});
+
+// API endpoint for getting details of a specific manga
+app.get("/manga/details/:manga_link", async (req, res) => {
+  const manga_link = req.params.manga_link;
+
+  try {
+    // Read manga details from corresponding JSON file
+    const detailsData = fs.readFileSync(
+      path.join(jsonDir, manga_link, `manga_details_${manga_link}.json`)
+    );
+    const details = JSON.parse(detailsData);
+    res.json(details);
+  } catch (error) {
+    res.status(500).json({ error: `An error occurred: ${error}` });
+  }
+});
+
+// API endpoint for getting chapters of a specific manga
+app.get("/manga/chapters/:manga_link", async (req, res) => {
+  const manga_link = req.params.manga_link;
+
+  try {
+    // Read manga chapters from corresponding JSON file
+    const chaptersData = fs.readFileSync(
+      path.join(jsonDir, manga_link, `manga_chapters_${manga_link}.json`)
+    );
+    const chapters = JSON.parse(chaptersData);
+    res.json(chapters);
+  } catch (error) {
+    res.status(500).json({ error: `An error occurred: ${error}` });
+  }
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
