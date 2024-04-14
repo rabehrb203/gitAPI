@@ -1,0 +1,3 @@
+{
+    "error": "An error occurred: HTTPSConnectionPool(host='thunderscans.com', port=443): Max retries exceeded with url: /manga/5597283480-wind-breaker (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x00000176A9750BC0>: Failed to establish a new connection: [Errno 11001] getaddrinfo failed'))"
+}
