@@ -1,0 +1,3 @@
+{
+    "error": "An error occurred: HTTPSConnectionPool(host='mangatak.com', port=443): Max retries exceeded with url: /manga/6935974387-sovereign-of-judgment (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x000001AD95336F30>: Failed to establish a new connection: [Errno 11001] getaddrinfo failed'))"
+}
